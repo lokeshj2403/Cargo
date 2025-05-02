@@ -9,7 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useState } from 'react';
-import { CheckCircle } from 'lucide-react'; // Assuming a future success state
+import { CheckCircle, Loader2 } from 'lucide-react'; // Assuming a future success state
+import { signInWithGoogle, signInWithFacebook } from '@/lib/firebase/auth'; // Import Firebase auth functions
+import { useToast } from '@/hooks/use-toast'; // Import useToast
+import { AuthError } from 'firebase/auth';
+
 
 // Placeholder icons for social login
 const GoogleIcon = () => <svg className="mr-2 h-4 w-4" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.09 0 24c0 3.91.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path><path fill="none" d="M0 0h48v48H0z"></path></svg>;
@@ -24,6 +28,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false); // For displaying success message
+  const { toast } = useToast(); // Initialize useToast
+
 
   // Dummy handler functions - Replace with actual authentication logic
   const handleLogin = async (e: React.FormEvent) => {
@@ -36,10 +42,13 @@ export default function LoginPage() {
     await new Promise(resolve => setTimeout(resolve, 1500));
     // Replace with actual API call and error handling
     if (email === 'user@example.com' && password === 'password') {
+        // TODO: Implement Firebase email/password sign in
+         toast({ title: "Login Success (Simulated)", description: "Redirecting..." });
         // Redirect to user dashboard or home page
         window.location.href = '/'; // Or a dashboard page
     } else {
         setError('Invalid email or password.');
+        toast({ title: "Login Failed", description: 'Invalid email or password.', variant: "destructive" });
     }
     setIsLoading(false);
   };
@@ -48,6 +57,7 @@ export default function LoginPage() {
     e.preventDefault();
      if (password !== confirmPassword) {
       setError('Passwords do not match.');
+      toast({ title: "Registration Failed", description: 'Passwords do not match.', variant: "destructive" });
       return;
     }
     setIsLoading(true);
@@ -57,22 +67,52 @@ export default function LoginPage() {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
      // Replace with actual API call, error handling, and success state
+     // TODO: Implement Firebase email/password registration
+    setError('Registration feature not fully implemented yet.'); // Placeholder
+    toast({ title: "Registration Info", description: 'Registration feature not fully implemented yet.', variant: "default" });
     // On successful registration:
     // setIsSuccess(true);
+    // toast({ title: "Registration Successful!", description: "You can now log in." });
     // Optionally reset form or automatically log in
-    setError('Registration feature not implemented yet.'); // Placeholder
     setIsLoading(false);
   };
 
-  const handleSocialLogin = (provider: 'google' | 'facebook') => {
+  const handleSocialLogin = async (provider: 'google' | 'facebook') => {
     setIsLoading(true);
     setError(null);
     setIsSuccess(false);
     console.log(`Initiating ${provider} login...`);
-    // Replace with actual social login SDK calls (e.g., Firebase Auth, NextAuth.js)
-     setError(`${provider} login not implemented yet.`); // Placeholder
+
+    let result: any; // Can be UserCredential or AuthError
+    if (provider === 'google') {
+      result = await signInWithGoogle();
+    } else if (provider === 'facebook') {
+      result = await signInWithFacebook();
+    }
+
+    if (result && result.user) {
+        // Login successful
+        toast({ title: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Login Successful!`, description: `Welcome, ${result.user.displayName || result.user.email}!` });
+        // Redirect to dashboard or home
+        window.location.href = '/';
+    } else if (result instanceof Error) {
+        // Login failed
+        const authError = result as AuthError;
+        let errorMessage = `Failed to sign in with ${provider}. ${authError.message}`;
+         if (authError.code === 'auth/popup-closed-by-user') {
+             errorMessage = `${provider.charAt(0).toUpperCase() + provider.slice(1)} sign-in cancelled.`;
+         } else if (authError.code === 'auth/account-exists-with-different-credential') {
+            errorMessage = 'An account already exists with this email using a different sign-in method.';
+        }
+        setError(errorMessage);
+        toast({ title: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Login Failed`, description: errorMessage, variant: "destructive" });
+    } else {
+        // Handle unexpected cases or errors without specific codes
+         setError(`An unknown error occurred during ${provider} login.`);
+         toast({ title: "Login Failed", description: `An unknown error occurred during ${provider} login.`, variant: "destructive" });
+    }
+
     setIsLoading(false);
-     // Example: window.location.href = `/api/auth/signin/${provider}`;
   };
 
   return (
@@ -99,53 +139,57 @@ export default function LoginPage() {
                     </Button>
                 </div>
             ) : (
-                <form onSubmit={isRegistering ? handleRegister : handleLogin} className="space-y-4" suppressHydrationWarning>
-                <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={isLoading}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={isLoading}
-                    />
-                </div>
-                {isRegistering && (
+                <form onSubmit={isRegistering ? handleRegister : handleLogin} className="space-y-4">
                     <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password</Label>
-                    <Input
-                        id="confirmPassword"
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={isLoading}
+                        aria-required="true" // Added aria-required
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <Input
+                        id="password"
                         type="password"
                         placeholder="••••••••"
                         required
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         disabled={isLoading}
-                    />
+                        aria-required="true" // Added aria-required
+                        />
                     </div>
-                )}
+                    {isRegistering && (
+                        <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm Password</Label>
+                        <Input
+                            id="confirmPassword"
+                            type="password"
+                            placeholder="••••••••"
+                            required
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            disabled={isLoading}
+                            aria-required="true" // Added aria-required
+                        />
+                        </div>
+                    )}
 
-                {error && (
-                    <p className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p>
-                )}
+                    {error && (
+                        <p role="alert" className="text-sm text-destructive bg-destructive/10 p-2 rounded-md">{error}</p> // Added role="alert"
+                    )}
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Processing...' : (isRegistering ? 'Register' : 'Log In')}
-                </Button>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+                        {isLoading ? 'Processing...' : (isRegistering ? 'Register' : 'Log In')}
+                    </Button>
                 </form>
             )}
 
@@ -159,10 +203,12 @@ export default function LoginPage() {
                         </p>
                         <div className="grid grid-cols-2 gap-4">
                         <Button variant="outline" onClick={() => handleSocialLogin('google')} disabled={isLoading}>
-                            <GoogleIcon /> Google
+                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : <GoogleIcon />}
+                             Google
                         </Button>
                         <Button variant="outline" onClick={() => handleSocialLogin('facebook')} disabled={isLoading}>
-                            <FacebookIcon /> Facebook
+                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : <FacebookIcon />}
+                             Facebook
                         </Button>
                         </div>
                     </div>
