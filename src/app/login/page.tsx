@@ -99,7 +99,7 @@ export default function LoginPage() {
                     </Button>
                 </div>
             ) : (
-                <form onSubmit={isRegistering ? handleRegister : handleLogin} className="space-y-4">
+                <form onSubmit={isRegistering ? handleRegister : handleLogin} className="space-y-4" suppressHydrationWarning>
                 <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
