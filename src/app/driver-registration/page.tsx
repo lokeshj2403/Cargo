@@ -9,11 +9,11 @@ import { Footer } from '@/components/layout/footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Label } from '@/components/ui/label'; // Label is technically not needed if only using RHF FormLabel
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"; // Added FormDescription
 import { Separator } from '@/components/ui/separator';
 
 // Define Zod schema for validation
@@ -201,6 +201,7 @@ export default function DriverRegistrationPage() {
                         />
                     </div>
                     {/* Driver License Upload - Placeholder */}
+                    {/* RHF integrated file input - uncomment if using */}
                     {/* <FormField
                       control={form.control}
                       name="licenseUpload"
@@ -224,6 +225,7 @@ export default function DriverRegistrationPage() {
                          </FormItem>
                        )}
                      /> */}
+                     {/* Simple non-RHF file input placeholder */}
                      <FormItem>
                            <FormLabel>Upload Driver's License (PDF, JPG, PNG)</FormLabel>
                             <FormControl>
@@ -346,7 +348,7 @@ export default function DriverRegistrationPage() {
                                 name="capacityUnit"
                                 render={({ field }) => (
                                     <FormItem className='self-end'>
-                                    {/* <FormLabel>Unit</FormLabel> */}
+                                    {/* <FormLabel>Unit</FormLabel> */} {/* Label hidden for better layout */}
                                     <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
                                         <FormControl>
                                         <SelectTrigger>
@@ -367,6 +369,7 @@ export default function DriverRegistrationPage() {
 
                     </div>
                       {/* Truck Documents Upload - Placeholder */}
+                     {/* RHF integrated file input - uncomment if using */}
                      {/* <FormField
                       control={form.control}
                       name="documentsUpload"
@@ -391,6 +394,7 @@ export default function DriverRegistrationPage() {
                          </FormItem>
                        )}
                      /> */}
+                      {/* Simple non-RHF file input placeholder */}
                      <FormItem>
                            <FormLabel>Upload Truck Documents (Registration, Insurance, etc.)</FormLabel>
                             <FormControl>
@@ -405,7 +409,7 @@ export default function DriverRegistrationPage() {
                            <FormDescription>
                              File upload functionality requires backend integration.
                             </FormDescription>
-                            {/* <FormMessage /> */}
+                            {/* <FormMessage /> */} {/* Error display needs RHF integration for file inputs */}
                          </FormItem>
                 </section>
 
