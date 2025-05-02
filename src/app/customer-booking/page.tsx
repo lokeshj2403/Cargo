@@ -1,3 +1,4 @@
+// src/app/customer-booking/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -9,30 +10,46 @@ import { Footer } from '@/components/layout/footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Label } from '@/components/ui/label'; // Keep for potential non-RHF labels if needed
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Clock } from "lucide-react"; // Added Clock icon
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Separator } from '@/components/ui/separator';
 
-// Define Zod schema for validation
+// Define Zod schema for validation based on the image
 const shipmentSchema = z.object({
-  source: z.string().min(3, { message: "Source location must be at least 3 characters." }),
-  destination: z.string().min(3, { message: "Destination location must be at least 3 characters." }),
-  scheduledDate: z.date({ required_error: "A scheduled date is required." }),
-  truckType: z.string().min(1, { message: "Please select a truck type." }),
-  additionalDetails: z.string().max(500, { message: "Details cannot exceed 500 characters." }).optional(),
-  // Add other relevant fields like weight, dimensions, cargo type etc. if needed
-  cargoWeight: z.preprocess(
+  pickupLocation: z.string().min(3, { message: "Pickup location must be at least 3 characters." }),
+  deliveryLocation: z.string().min(3, { message: "Delivery location must be at least 3 characters." }),
+  pickupDate: z.date({ required_error: "A pickup date is required." }),
+  pickupTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: "Invalid time format (HH:MM)." }).optional(), // Simple HH:MM validation, optional for now
+  estimatedDistance: z.preprocess(
     (a) => parseFloat(z.string().parse(a)),
-    z.number({ invalid_type_error: "Weight must be a number." }).positive({ message: "Weight must be positive." }).optional()
+    z.number({ invalid_type_error: "Distance must be a number." }).positive({ message: "Distance must be positive." })
   ),
-  cargoType: z.string().optional(),
+  cargoType: z.string().min(1, { message: "Please select a cargo type." }),
+  weight: z.preprocess(
+    (a) => parseFloat(z.string().parse(a)),
+    z.number({ required_error: "Weight is required.", invalid_type_error: "Weight must be a number." }).positive({ message: "Weight must be positive." })
+  ),
+  cargoLength: z.preprocess(
+    (a) => parseFloat(z.string().parse(a) || "0"), // Allow empty string -> 0
+    z.number({ invalid_type_error: "Length must be a number." }).nonnegative({ message: "Length cannot be negative." })
+  ).optional(),
+  cargoWidth: z.preprocess(
+    (a) => parseFloat(z.string().parse(a) || "0"), // Allow empty string -> 0
+    z.number({ invalid_type_error: "Width must be a number." }).nonnegative({ message: "Width cannot be negative." })
+  ).optional(),
+  cargoHeight: z.preprocess(
+    (a) => parseFloat(z.string().parse(a) || "0"), // Allow empty string -> 0
+    z.number({ invalid_type_error: "Height must be a number." }).nonnegative({ message: "Height cannot be negative." })
+  ).optional(),
+  additionalRequirements: z.string().max(500, { message: "Requirements cannot exceed 500 characters." }).optional(),
 });
 
 type ShipmentFormData = z.infer<typeof shipmentSchema>;
@@ -44,13 +61,17 @@ export default function CustomerBookingPage() {
   const form = useForm<ShipmentFormData>({
     resolver: zodResolver(shipmentSchema),
     defaultValues: {
-        source: "",
-        destination: "",
-        scheduledDate: undefined,
-        truckType: "",
-        additionalDetails: "",
-        cargoWeight: undefined,
+        pickupLocation: "",
+        deliveryLocation: "",
+        pickupDate: undefined,
+        pickupTime: "",
+        estimatedDistance: undefined,
         cargoType: "",
+        weight: undefined,
+        cargoLength: undefined,
+        cargoWidth: undefined,
+        cargoHeight: undefined,
+        additionalRequirements: "",
     },
   });
 
@@ -59,37 +80,15 @@ export default function CustomerBookingPage() {
     setIsLoading(true);
     console.log('Shipment Data Submitted:', data);
 
-    // Simulate API call to post shipment details
+    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // Replace with actual API call (e.g., using fetch or axios)
-    // const response = await fetch('/api/shipments', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(data),
-    // });
-
-    // if (response.ok) {
-    //    toast({
-    //      title: "Shipment Posted!",
-    //      description: "Your shipment details have been posted successfully. Drivers will now be notified.",
-    //      variant: "default", // Or use a success variant if defined
-    //    });
-    //    form.reset(); // Reset form on success
-    // } else {
-    //    toast({
-    //      title: "Error Posting Shipment",
-    //      description: "There was a problem posting your shipment. Please try again.",
-    //      variant: "destructive",
-    //    });
-    // }
 
      toast({
        title: "Shipment Posted (Simulated)!",
        description: "Your shipment details have been posted successfully. Drivers will now be notified.",
        variant: "default",
      });
-     form.reset(); // Reset form on success
+     form.reset();
 
     setIsLoading(false);
   };
@@ -101,20 +100,23 @@ export default function CustomerBookingPage() {
         <Card className="w-full shadow-lg">
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-primary">Book a Truck</CardTitle>
-            <CardDescription>Enter the details of your shipment below.</CardDescription>
+            {/* Removed CardDescription as it's not in the image */}
           </CardHeader>
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <h3 className="text-lg font-semibold text-foreground border-b pb-1">Shipment Details</h3>
+
+                {/* Pickup & Delivery Location */}
                 <div className="grid md:grid-cols-2 gap-6">
                    <FormField
                       control={form.control}
-                      name="source"
+                      name="pickupLocation"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Source Location</FormLabel>
+                          <FormLabel>Pickup Location</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., Los Angeles, CA" {...field} disabled={isLoading} />
+                            <Input placeholder="Enter pickup address" {...field} disabled={isLoading} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -122,12 +124,12 @@ export default function CustomerBookingPage() {
                     />
                     <FormField
                       control={form.control}
-                      name="destination"
+                      name="deliveryLocation"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Destination Location</FormLabel>
+                          <FormLabel>Delivery Location</FormLabel>
                           <FormControl>
-                            <Input placeholder="e.g., New York, NY" {...field} disabled={isLoading} />
+                            <Input placeholder="Enter delivery address" {...field} disabled={isLoading} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -135,13 +137,14 @@ export default function CustomerBookingPage() {
                     />
                 </div>
 
-                 <div className="grid md:grid-cols-2 gap-6">
+                {/* Date, Time, Distance */}
+                 <div className="grid md:grid-cols-3 gap-6">
                      <FormField
                       control={form.control}
-                      name="scheduledDate"
+                      name="pickupDate"
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
-                          <FormLabel>Scheduled Date</FormLabel>
+                          <FormLabel>Pickup Date</FormLabel>
                            <Popover>
                               <PopoverTrigger asChild>
                                 <FormControl>
@@ -155,9 +158,9 @@ export default function CustomerBookingPage() {
                                   >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     {field.value ? (
-                                      format(field.value, "PPP")
+                                      format(field.value, "dd-MM-yyyy") // Format as dd-mm-yyyy
                                     ) : (
-                                      <span>Pick a date</span>
+                                      <span>dd-mm-yyyy</span>
                                     )}
                                   </Button>
                                 </FormControl>
@@ -179,83 +182,153 @@ export default function CustomerBookingPage() {
                       )}
                     />
 
-                     <FormField
+                    <FormField
                       control={form.control}
-                      name="truckType"
+                      name="pickupTime"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Truck Type</FormLabel>
-                           <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
-                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select truck type" />
-                              </SelectTrigger>
-                             </FormControl>
-                            <SelectContent>
-                              <SelectItem value="dry_van">Dry Van</SelectItem>
-                              <SelectItem value="refrigerated">Refrigerated Truck</SelectItem>
-                              <SelectItem value="flatbed">Flatbed</SelectItem>
-                              <SelectItem value="tanker">Tanker</SelectItem>
-                              <SelectItem value="box_truck">Box Truck</SelectItem>
-                               <SelectItem value="other">Other (Specify in details)</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <FormLabel>Pickup Time</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                                <Input type="time" placeholder="--:--" {...field} disabled={isLoading} className="pr-8" />
+                                <Clock className="absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="estimatedDistance"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Estimated Distance (km)</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="0" {...field} onChange={event => field.onChange(+event.target.value)} disabled={isLoading} min="0" step="any" />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                  </div>
 
-                  <div className="grid md:grid-cols-2 gap-6">
-                      <FormField
+                 {/* Cargo Type & Weight */}
+                 <div className="grid md:grid-cols-2 gap-6">
+                     <FormField
+                      control={form.control}
+                      name="cargoType"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Cargo Type</FormLabel>
+                           <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoading}>
+                             <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select cargo type" />
+                              </SelectTrigger>
+                             </FormControl>
+                            <SelectContent>
+                              {/* Add relevant cargo types */}
+                              <SelectItem value="general">General Cargo</SelectItem>
+                              <SelectItem value="perishable">Perishable Goods</SelectItem>
+                              <SelectItem value="fragile">Fragile Items</SelectItem>
+                              <SelectItem value="hazardous">Hazardous Materials</SelectItem>
+                              <SelectItem value="liquid">Liquid Bulk</SelectItem>
+                              <SelectItem value="dry_bulk">Dry Bulk</SelectItem>
+                              <SelectItem value="vehicles">Vehicles</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
                         control={form.control}
-                        name="cargoWeight"
+                        name="weight"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Cargo Weight (Optional, in lbs/kg)</FormLabel>
+                            <FormLabel>Weight (kg)</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="e.g., 5000" {...field} onChange={event => field.onChange(+event.target.value)} disabled={isLoading} />
+                              <Input type="number" placeholder="0" {...field} onChange={event => field.onChange(+event.target.value)} disabled={isLoading} min="0" step="any" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                       <FormField
-                        control={form.control}
-                        name="cargoType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Cargo Type (Optional)</FormLabel>
-                            <FormControl>
-                              <Input placeholder="e.g., Electronics, Produce, Furniture" {...field} disabled={isLoading} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                  </div>
+                 </div>
+
+                 {/* Cargo Dimensions */}
+                 <div>
+                    <Label className='mb-2 block'>Cargo Dimensions</Label>
+                    <div className="grid md:grid-cols-3 gap-6">
+                        <FormField
+                            control={form.control}
+                            name="cargoLength"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-xs text-muted-foreground">Length (cm)</FormLabel>
+                                <FormControl>
+                                <Input type="number" placeholder="Length (cm)" {...field} onChange={event => field.onChange(+event.target.value)} disabled={isLoading} min="0" step="any"/>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="cargoWidth"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-xs text-muted-foreground">Width (cm)</FormLabel>
+                                <FormControl>
+                                <Input type="number" placeholder="Width (cm)" {...field} onChange={event => field.onChange(+event.target.value)} disabled={isLoading} min="0" step="any" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="cargoHeight"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-xs text-muted-foreground">Height (cm)</FormLabel>
+                                <FormControl>
+                                <Input type="number" placeholder="Height (cm)" {...field} onChange={event => field.onChange(+event.target.value)} disabled={isLoading} min="0" step="any" />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    </div>
+                 </div>
 
 
+                 {/* Additional Requirements */}
                   <FormField
                     control={form.control}
-                    name="additionalDetails"
+                    name="additionalRequirements"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Additional Details (Optional)</FormLabel>
+                        <FormLabel>Additional Requirements</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Any specific requirements, handling instructions, etc."
+                            placeholder="Any special instructions or requirements..."
                             className="resize-none"
                             {...field}
                              disabled={isLoading}
                           />
                         </FormControl>
-                         <p className="text-xs text-muted-foreground text-right">{field.value?.length || 0}/500</p>
+                         {/* Optional: Keep character count if desired */}
+                         {/* <p className="text-xs text-muted-foreground text-right">{field.value?.length || 0}/500</p> */}
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
+                <Separator />
 
                 <div className="flex justify-end pt-4">
                   <Button type="submit" disabled={isLoading}>
@@ -272,3 +345,5 @@ export default function CustomerBookingPage() {
     </div>
   );
 }
+
+    
