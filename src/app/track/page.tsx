@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -90,8 +91,8 @@ export default function TrackLoadPage() {
             <CardDescription>Enter your Shipment ID to see the current status.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleTrackShipment} className="flex items-end gap-4 mb-8">
-              <div className="flex-grow space-y-2">
+            <form onSubmit={handleTrackShipment} className="flex flex-col sm:flex-row sm:items-end gap-4 mb-8">
+              <div className="w-full sm:flex-grow space-y-2">
                 <Label htmlFor="shipmentId">Shipment ID</Label>
                 <Input
                   id="shipmentId"
@@ -102,7 +103,7 @@ export default function TrackLoadPage() {
                   disabled={isLoading}
                 />
               </div>
-              <Button type="submit" disabled={isLoading || !shipmentId}>
+              <Button type="submit" className="w-full sm:w-auto" disabled={isLoading || !shipmentId}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Track
               </Button>

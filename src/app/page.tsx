@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
@@ -14,11 +15,10 @@ export default function Home() {
         {/* Hero Section */}
         <section className="relative h-[60vh] md:h-[70vh] w-full flex items-center justify-center text-center bg-gradient-to-b from-primary/10 to-background">
           <Image
-            src="https://picsum.photos/1920/1080"
+            src="https://placehold.co/1920x1080.png"
             alt="Truck driving on highway"
-            layout="fill"
-            objectFit="cover"
-            className="absolute inset-0 z-0 opacity-30"
+            fill
+            className="absolute inset-0 z-0 opacity-30 object-cover"
             data-ai-hint="truck highway logistics"
             priority
           />
@@ -48,7 +48,7 @@ export default function Home() {
               <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
                 <CardHeader className="p-0">
                    <Image
-                     src="https://picsum.photos/600/400?random=1"
+                     src="https://placehold.co/600x400.png"
                      alt="Customer booking a truck"
                      width={600}
                      height={400}
@@ -69,7 +69,7 @@ export default function Home() {
               <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
                  <CardHeader className="p-0">
                   <Image
-                    src="https://picsum.photos/600/400?random=2"
+                    src="https://placehold.co/600x400.png"
                     alt="Truck driver registering"
                     width={600}
                     height={400}
@@ -105,7 +105,7 @@ export default function Home() {
         <section id="services" className="py-16 bg-background">
           <div className="container max-w-screen-lg px-4">
             <h2 className="text-3xl font-bold text-center mb-12 text-primary">Our Services</h2>
-            <div className="grid md:grid-cols-3 gap-8 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 text-center">
               <Card className="pt-6">
                 <CardContent>
                   <Package size={48} className="mx-auto mb-4 text-accent" />
