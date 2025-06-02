@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label'; // Label is technically not neede
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form"; // Added FormDescription
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Separator } from '@/components/ui/separator';
 
 // Define Zod schema for validation
@@ -121,6 +121,15 @@ export default function DriverRegistrationPage() {
 
     setIsLoading(false);
   };
+
+  const handleCancel = () => {
+    form.reset();
+    toast({
+        title: "Form Cleared",
+        description: "Registration form has been reset.",
+        variant: "default"
+    })
+  }
 
   // Helper for file input label
   const getFileName = (fieldValue: any): string => {
@@ -413,7 +422,10 @@ export default function DriverRegistrationPage() {
                          </FormItem>
                 </section>
 
-                <div className="flex justify-end pt-6">
+                <div className="flex justify-end pt-6 space-x-4">
+                  <Button type="button" variant="outline" onClick={handleCancel} disabled={isLoading}>
+                     Cancel
+                  </Button>
                   <Button type="submit" disabled={isLoading}>
                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                      {isLoading ? 'Submitting Registration...' : 'Register Truck'}
@@ -428,4 +440,3 @@ export default function DriverRegistrationPage() {
     </div>
   );
 }
-
